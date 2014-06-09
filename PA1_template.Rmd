@@ -1,20 +1,103 @@
-# Reproducible Research: Peer Assessment 1
+#Peer Assessment 1
+========================================================
+
+##Loading and preprocessing the data
+The data is downloaded from the link given and unzipped into a new folder *'ReprodResA1'* created in the working directory. Using `read.csv`, the data is read into a data frame *'stepsData'*.
+
+```{r loading, results = "hide"}
+url <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+download.file(url, "Peer Assignment 1", method = "curl")
+if(!file.exists("./ReprodResA1")) {dir.create(./ReprodResA1)}
+unzip("Peer Assignment 1", exdir = "./ReprodResA1")
+stepsData <- read.csv("./ReprodResA1/activity.csv")
+```
+
+##Mean number of steps per day
+```{r histogram of total steps per day}
+stepsDaily <- tapply(stepsData$steps, INDEX = stepsData$date, sum) 
+hist(stepsDaily, main = "Histogram of total number of steps per day taken", xlab = "Total number of steps taken per day", col = "light blue")
+```
+
+The mean and median of total number of steps taken per day is calculated as follows:
+```{r mean of total steps per day}
+mean(stepsDaily, na.rm = TRUE)
+```
+
+```{r median of total steps per day}
+median(stepsDaily, na.rm = TRUE)
+```
+Note that NA values are ignored in the above calculations.
+
+##Average of steps in each interval
+```{r average steps in interval}
+stepsAveItvl <- tapply(stepsData$steps, INDEX = stepsData$interval, mean, na.rm = TRUE) 
+plot(stepsAveItvl, t ="l", main = "Average steps taken in each time interval", ylab = "Number of steps", xlab = "Time", xaxt = "n")
+labels <- c("12AM", "2AM", "4AM", "6AM", "8AM", "10AM", "12PM", "2PM", "4PM", "6PM", "8PM", "10PM", "12AM")
+axis(1, at = seq(0, 288, 24), labels = labels)
+```
+
+The time interval with the highest average steps taken is identified as follows:
+```{r max average steps in interval}
+names(which.max(stepsAveItvl))
+```
+
+##Handling NA values
+To calculate total number of NA values:
+```{r calculating NA values}
+sum(is.na(stepsData$steps))
+```
+
+NA values are substituted with mean values of that particular time interval
+```{r substituting NA values}
+for (i in 1:nrow(stepsData)) 
+  {
+    if(is.na(stepsData[i,1])) 
+      {
+        stepsData[i,1] <- stepsAveItvl[names(stepsAveItvl) == stepsData[i,3]]
+      }
+  }
+```
+
+A snapshot of the processed data:
+```{r snapshot, echo = FALSE}
+head(stepsData)
+```
+
+With the substitution of NA values:
+```{r histogram of total steps per day na.rm, echo = FALSE}
+stepsDaily <- tapply(stepsData$steps, INDEX = stepsData$date, sum) 
+hist(stepsDaily, main = "Histogram of total number of steps per day taken", xlab = "Total number of steps taken per day", col = "light blue")
+```
+
+The mean and median of total number of steps taken per day has not changed much as NA values were substituted with average values of the same intervals from other days:
+```{r mean of total steps per day na.rm}
+mean(stepsDaily)
+```
+
+```{r median of total steps per day na.rm}
+median(stepsDaily)
+```
+
+##Identifying activity patterns during weekdays and weekends
+Using the *weekday* function, activity data can be separated into weekdays and weekends for analysis. A new factor variable *day* is created to identify if a particular date is a weekday or weekend.
+```{r weekday and weekend}
+stepsData$date <- as.Date(stepsData$date)
+stepsData$day <- ifelse(weekdays(stepsData$date) %in% c("Saturday", "Sunday"), "weekend", "weekday")
+stepsData$day <- factor(stepsData$day)
+```
+
+The average steps taken during each interval is calculated for weekdays and weekends.
+```{r average steps in interval w/day w/end}
+stepsAveItvlWd <- tapply(stepsData[stepsData$day == "weekday", 1], INDEX = stepsData[stepsData$day == "weekday", 3], mean)
+stepsAveItvlWe <- tapply(stepsData[stepsData$day == "weekend", 1], INDEX = stepsData[stepsData$day == "weekend", 3], mean)
+par(mfrow = c(2,1))
+plot(stepsAveItvlWd, t ="l", main = "Average steps taken during weekdays", ylab = "Number of steps", xlab = "Time", xaxt = "n")
+labels <- c("12AM", "2AM", "4AM", "6AM", "8AM", "10AM", "12PM", "2PM", "4PM", "6PM", "8PM", "10PM", "12AM")
+axis(1, at = seq(0, 288, 24), labels = labels)
+plot(stepsAveItvlWe, t ="l", main = "Average steps taken during weekends", ylab = "Number of steps", xlab = "Time", xaxt = "n")
+axis(1, at = seq(0, 288, 24), labels = labels)
+```
+
+/
 
 
-## Loading and preprocessing the data
-
-
-
-## What is mean total number of steps taken per day?
-
-
-
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
